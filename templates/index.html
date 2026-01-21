@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Contract Trial Fund Prediction Tool</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            padding: 40px;
+            max-width: 600px;
+            width: 100%;
+        }
+        
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 28px;
+            font-weight: 600;
+        }
+        
+        .upload-area {
+            border: 2px dashed #667eea;
+            border-radius: 10px;
+            padding: 40px;
+            text-align: center;
+            margin-bottom: 30px;
+            background: #f8f9ff;
+            transition: all 0.3s ease;
+        }
+        
+        .upload-area:hover {
+            border-color: #764ba2;
+            background: #f0f2ff;
+        }
+        
+        .file-input-wrapper {
+            position: relative;
+            display: inline-block;
+            margin-bottom: 20px;
+        }
+        
+        .file-input {
+            position: absolute;
+            opacity: 0;
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+        }
+        
+        .file-label {
+            display: inline-block;
+            padding: 12px 30px;
+            background: #667eea;
+            color: white;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 6px rgba(102, 126, 234, 0.3);
+        }
+        
+        .file-label:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(102, 126, 234, 0.4);
+        }
+        
+        .file-name {
+            margin-top: 15px;
+            color: #666;
+            font-size: 14px;
+            min-height: 20px;
+        }
+        
+        .file-name.has-file {
+            color: #667eea;
+            font-weight: 500;
+        }
+        
+        .predict-button {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+        
+        .predict-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.5);
+        }
+        
+        .predict-button:active {
+            transform: translateY(0);
+        }
+        
+        .predict-button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        
+        .form-container {
+            margin-top: 20px;
+        }
+        
+        .flash-messages {
+            margin-bottom: 20px;
+        }
+        
+        .flash-message {
+            padding: 12px 20px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+        
+        .flash-message.error {
+            background: #fee;
+            color: #c33;
+            border: 1px solid #fcc;
+        }
+        
+        .flash-message.success {
+            background: #efe;
+            color: #3c3;
+            border: 1px solid #cfc;
+        }
+        
+        .info {
+            margin-top: 30px;
+            padding: 20px;
+            background: #f8f9ff;
+            border-radius: 8px;
+            font-size: 13px;
+            color: #666;
+            line-height: 1.6;
+        }
+        
+        .info strong {
+            color: #667eea;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Contract Trial Fund Prediction Tool</h1>
+        
+        <!-- Flash messages -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="flash-messages">
+                    {% for category, message in messages %}
+                        <div class="flash-message {{ category }}">{{ message }}</div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+        
+        <form action="/predict" method="post" enctype="multipart/form-data" id="uploadForm">
+            <div class="upload-area">
+                <div class="file-input-wrapper">
+                    <input type="file" name="file" id="fileInput" class="file-input" accept=".xlsx,.xls" required>
+                    <label for="fileInput" class="file-label">Choose File</label>
+                </div>
+                <div class="file-name" id="fileName">No file selected</div>
+            </div>
+            
+            <div class="form-container">
+                <button type="submit" class="predict-button" id="predictButton" disabled>Predict & Download</button>
+            </div>
+        </form>
+        
+        <div class="info">
+            <strong>Instructions:</strong><br>
+            1. Click "Choose File" to select your Excel file (.xlsx or .xls)<br>
+            2. Click "Predict & Download" to process and download results<br>
+            3. The output file will contain two columns: <strong>user_id</strong> and <strong>预测结果</strong>
+        </div>
+    </div>
+    
+    <script>
+        // Update file name display when file is selected
+        const fileInput = document.getElementById('fileInput');
+        const fileName = document.getElementById('fileName');
+        const predictButton = document.getElementById('predictButton');
+        
+        fileInput.addEventListener('change', function(e) {
+            if (this.files && this.files.length > 0) {
+                fileName.textContent = 'Selected: ' + this.files[0].name;
+                fileName.classList.add('has-file');
+                predictButton.disabled = false;
+            } else {
+                fileName.textContent = 'No file selected';
+                fileName.classList.remove('has-file');
+                predictButton.disabled = true;
+            }
+        });
+        
+        // Show loading state when form is submitted
+        const form = document.getElementById('uploadForm');
+        form.addEventListener('submit', function() {
+            predictButton.textContent = 'Processing...';
+            predictButton.disabled = true;
+        });
+        
+        // Initialize button state - button starts disabled
+        // It will be enabled when a file is selected
+    </script>
+</body>
+</html>
